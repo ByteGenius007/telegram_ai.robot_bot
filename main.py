@@ -9,6 +9,7 @@ async def main():
         print("Bot disabled")
         sys.exit()
     
+    
     await init_db()
     # запускаем оба бота параллельно
     await asyncio.gather(
