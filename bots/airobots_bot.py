@@ -80,7 +80,7 @@ async def phone_confirm(message: types.Message):
 async def about_company(callback: types.CallbackQuery):
     await callback.answer()
 
-    video = FSInputFile("media/videos/intro.mp4")
+    video = FSInputFile("media/videos/robot1.mp4")
 
     await callback.message.answer(
         "🤖 AI Robots — магазин и аренда современных роботов.\n\n"
@@ -143,9 +143,12 @@ async def open_product(callback: types.CallbackQuery):
     await callback.answer()
 
 
+
+
 @dp.callback_query(F.data == "back_to_products_menu")
 async def back_to_products(callback: types.CallbackQuery):
 
+    
     await callback.message.delete()
 
     # меню
@@ -155,7 +158,24 @@ async def back_to_products(callback: types.CallbackQuery):
     )
     await callback.answer()
 
+@dp.callback_query(F.data == "contacts")
+async def show_contacts(callback: types.CallbackQuery):
+    await callback.answer()  # убираем "час ожидания"
+    
+    contact_text = (
+        "🏢 Адрес:\n"
+        "г. Астана, Казахстан\n\n"
+        "📞 Телефон:\n"
+        "+7 (700) 000-00-00\n\n"
+        "✉ Email:\n"
+        "info@ai-robots.kz"
+    )
 
+    await callback.message.answer(contact_text)
+    await callback.message.answer(
+        "Выбери, что хочешь узнать дальше 👇",
+        reply_markup=main_menu_kb
+    )
 
 @dp.message()
 async def messages_router(message: types.Message):
