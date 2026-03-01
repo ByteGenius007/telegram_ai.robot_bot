@@ -1,5 +1,5 @@
 import asyncio
-from bots.airobots_bot import dp as dp_marat, bot as bot_airobots
+from bots.airobots_bot import dp as dp_airobots, bot as bot_airobots
 from bots.admin_bot import dp as dp_admin, bot as bot_admin
 import os
 import sys
@@ -12,7 +12,7 @@ async def main():
     await init_db()
     # запускаем оба бота параллельно
     await asyncio.gather(
-        dp_marat.start_polling(bot_airobots),
+        dp_airobots.start_polling(bot_airobots),
         dp_admin.start_polling(bot_admin)
     )
 
