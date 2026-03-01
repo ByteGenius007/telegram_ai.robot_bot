@@ -16,6 +16,12 @@ main_menu_kb = InlineKeyboardMarkup(
         ],
         [
             InlineKeyboardButton(
+            text="🤖 AI-консультант",
+            callback_data="ai_assistant"
+            )
+        ],
+        [
+            InlineKeyboardButton(
                 text="🌐 Сайт",
                 url="https://my-robot-store.great-site.net/"  # ссылка на сайт
             )

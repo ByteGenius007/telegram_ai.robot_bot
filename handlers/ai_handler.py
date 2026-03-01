@@ -1,36 +1,110 @@
-import openai
-from config import OPENAI_API_KEY
+import requests
+import json
+from config import GROQ_API_KEY
+import re
 
-openai.api_key = OPENAI_API_KEY
+API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
-# память диалога (можно расширять)
 dialog_memory = {}
-MAX_HISTORY = 5
+MAX_HISTORY = 6
 
-SYSTEM_PROMPT = (
-    "Ты - помощник."
-)
 
+# ---------- ЗАГРУЗКА ТОВАРОВ ----------
+def load_products_text():
+    try:
+        with open("data/products.json", "r", encoding="utf-8") as f:
+            products = json.load(f)
+
+        text = "Товары магазина:\n\n"
+
+        for p in products:
+            text += (
+                f"Название: {p['name']}\n"
+                f"Описание: {p['description']}\n"
+                f"Цена: {p.get('price', 'по запросу')}\n\n"
+            )
+
+        return text
+
+    except Exception as e:
+        print("PRODUCT LOAD ERROR:", e)
+        return ""
+
+
+PRODUCTS_CONTEXT = load_products_text()
+
+
+SYSTEM_PROMPT = f"""
+Ты — AI Robots Assistant.
+
+Ты консультант магазина AI Robots.
+
+Твоя задача:
+- помогать выбрать робота
+- советовать товары
+- объяснять функции
+- отвечать кратко и понятно
+
+Используй информацию о товарах ниже:
+
+{PRODUCTS_CONTEXT}
+
+Если пользователь просит совет — рекомендуй конкретный товар.
+
+ВАЖНО:
+Если рекомендуешь товар — ОБЯЗАТЕЛЬНО в конце ответа напиши:
+
+[PRODUCT_ID: ID]
+
+пример:
+[PRODUCT_ID: 2]
+"""
+
+
+# ---------- AI ----------
 def ask_openai(user_id: int, question: str) -> str:
+
     history = dialog_memory.get(user_id, [])
     history.append({"role": "user", "content": question})
-
-    # обрезаем историю
     history = history[-MAX_HISTORY:]
     dialog_memory[user_id] = history
 
     messages = [{"role": "system", "content": SYSTEM_PROMPT}] + history
 
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=messages,
-            temperature=0.7,
-            max_tokens=300
+        response = requests.post(
+            API_URL,
+            headers={
+                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": "llama-3.3-70b-versatile",
+                "messages": messages,
+                "temperature": 0.7,
+                "max_tokens": 400
+            },
+            timeout=30
         )
-        answer = response.choices[0].message.content.strip()
-        dialog_memory[user_id].append({"role": "assistant", "content": answer})
-        return answer
+
+        data = response.json()
+
+        answer = data["choices"][0]["message"]["content"]
+
+        product_id = None
+        match = re.search(r"\[PRODUCT_ID:\s*(\d+)\]", answer)
+
+        if match:
+            product_id = int(match.group(1))
+            answer = re.sub(r"\[PRODUCT_ID:\s*\d+\]", "", answer).strip()
+
+        dialog_memory[user_id].append({
+            "role": "assistant",
+            "content": answer
+        })
+
+        return answer, product_id
+
     except Exception as e:
-        print("OpenAI ERROR:", e)
-        return "Сейчас не могу ответить, попробуй позже 🙏"
+        print("GROQ ERROR:", e)
+        return "⚠️ Сейчас ИИ временно недоступен."

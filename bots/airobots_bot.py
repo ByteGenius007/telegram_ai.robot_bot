@@ -9,8 +9,7 @@ from config import BOTS
 from keyboards.menu_kb import main_menu_kb
 from keyboards.products_kb import get_products_keyboard
 from handlers.ai_handler import ask_openai
-
-
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.types import Message
 
 from database import is_subscriber
@@ -18,7 +17,7 @@ from database import add_subscriber
 
 bot = Bot(token=BOTS["airobots"])
 dp = Dispatcher()
-
+ai_mode_users = set()
 # Кнопка запроса номера телефона для проверки, что человек
 phone_kb = ReplyKeyboardMarkup(
     keyboard=[
@@ -27,7 +26,16 @@ phone_kb = ReplyKeyboardMarkup(
     resize_keyboard=True,
     one_time_keyboard=True
 )
-
+ai_exit_kb = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [
+            InlineKeyboardButton(
+                text="❌ Выйти из AI-консультанта",
+                callback_data="exit_ai"
+            )
+        ]
+    ]
+)
 # Функция отправки основного приветствия и меню
 async def send_start_message(message: types.Message):
     photo = FSInputFile("media/photos/welcome.jpg")
@@ -176,6 +184,36 @@ async def show_contacts(callback: types.CallbackQuery):
         "Выбери, что хочешь узнать дальше 👇",
         reply_markup=main_menu_kb
     )
+@dp.callback_query(F.data == "ai_assistant")
+async def ai_assistant(callback: types.CallbackQuery):
+    await callback.answer()
+
+    user_id = callback.from_user.id
+    ai_mode_users.add(user_id)
+
+    await callback.message.answer(
+        "🤖 <b>AI-консультант активирован</b>\n\n"
+        "Теперь ты можешь просто написать вопрос.\n\n"
+        "Например:\n"
+        "• Какой робот подойдёт для бизнеса?\n"
+        "• Сколько стоит аренда?\n"
+        "• Посоветуй робота для мероприятия\n\n"
+        "Просто напиши сообщение 👇",
+        parse_mode="HTML",
+        reply_markup=ai_exit_kb
+    )
+@dp.callback_query(F.data == "exit_ai")
+async def exit_ai(callback: types.CallbackQuery):
+    await callback.answer()
+
+    user_id = callback.from_user.id
+    ai_mode_users.discard(user_id)
+
+    await callback.message.answer(
+        "✅ Ты вышел из AI-консультанта.\n\n"
+        "Выбери раздел меню 👇",
+        reply_markup=main_menu_kb
+    )
 
 @dp.message()
 async def messages_router(message: types.Message):
@@ -208,13 +246,37 @@ async def messages_router(message: types.Message):
     except Exception as e:
         print("Ошибка при проверке товаров:", e)
 
-    # --- ЕСЛИ ЭТО ОБЫЧНЫЙ ТЕКСТ → ИИ ---
+    # --- ЕСЛИ НЕ В РЕЖИМЕ AI → игнор ---
+    if message.from_user.id not in ai_mode_users:
+        return
+
+    # --- AI ОТВЕТ ---
     try:
-        await message.answer("🤖 Думаю...")
-        answer = ask_openai(message.from_user.id, text)
-        await message.answer(answer, reply_markup=main_menu_kb)
+        msg = await message.answer("🤖 Думаю...")
+
+        answer, product_id = ask_openai(message.from_user.id, text)
+
+        if product_id:
+            keyboard = InlineKeyboardMarkup(
+                inline_keyboard=[
+                    [
+                        InlineKeyboardButton(
+                            text="🤖 Открыть товар",
+                            url=f"https://my-robot-store.great-site.net/product?id={product_id}"
+                        )
+                    ]
+                ]
+            )
+
+            await message.answer(answer, reply_markup=keyboard)
+            await message.answer("Хочешь выйти из AI-консультанта? Выбери 👇", reply_markup=ai_exit_kb)
+        else:
+            await message.answer(answer, reply_markup=ai_exit_kb)
+
+        await msg.delete()
+
     except Exception as e:
-        print("Ошибка OpenAI:", e)
+        print("AI ERROR:", e)
         await message.answer("⚠️ Сейчас не могу ответить, попробуй позже 🙏", reply_markup=main_menu_kb)
 
 
