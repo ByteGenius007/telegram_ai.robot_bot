@@ -45,13 +45,15 @@ async def send_start_message(message: types.Message):
         photo=photo,
         caption=(
             f"Привет, {user_name}! 👋\n\n"
-            "Добро пожаловать в AI Robots 🤖\n\n"
+            "Добро пожаловать в <b>AI Robots</b> 🤖\n\n"
             "Мы помогаем подобрать роботов для:\n"
             "• бизнеса\n"
             "• мероприятий\n"
             "• аренды и покупки\n\n"
+            "💬 В боте есть <b>AI-консультант</b>, которому можно задать любой вопрос о роботах.\n\n"
             "Выбери нужный раздел ниже 👇"
-        )
+        ),
+        parse_mode="HTML"
     )
 
     await message.answer(

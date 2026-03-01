@@ -4,7 +4,7 @@ main_menu_kb = InlineKeyboardMarkup(
     inline_keyboard=[
         [
             InlineKeyboardButton(
-                text="🤖 Каталог",
+                text="📚 Каталог",
                 callback_data="products"
             )
         ],
