@@ -174,11 +174,11 @@ async def show_contacts(callback: types.CallbackQuery):
     
     contact_text = (
         "🏢 Адрес:\n"
-        "г. Астана, Казахстан\n\n"
+        "Казахстан, г. Астана, ул. Жумекена Нажимеденова 26\n\n"
         "📞 Телефон:\n"
-        "+7 (700) 000-00-00\n\n"
+        "+7 (771) 296-26-87\n\n"
         "✉ Email:\n"
-        "info@ai-robots.kz"
+        "airobots.store@gmail.com"
     )
 
     await callback.message.answer(contact_text)
