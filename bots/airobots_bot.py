@@ -2,7 +2,7 @@ import asyncio
 import json
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import CommandStart
-from aiogram.types import FSInputFile, KeyboardButton, ReplyKeyboardMarkup, InputMediaPhoto
+from aiogram.types import FSInputFile, KeyboardButton, ReplyKeyboardMarkup, InputMediaPhoto, ReplyKeyboardRemove
 from aiogram import F
 
 from config import BOTS
@@ -83,6 +83,11 @@ async def phone_confirm(message: types.Message):
     user_id = message.from_user.id
 
     await add_subscriber(user_id)
+    # Убираем клавиатуру с кнопкой
+    await message.answer(
+        "Спасибо, вы подтверждены! ✅",
+        reply_markup=ReplyKeyboardRemove()  # <- вот это убирает кнопку
+    )
     await send_start_message(message)
 
 
